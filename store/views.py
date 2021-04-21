@@ -3,7 +3,7 @@ import datetime
 from django.shortcuts import render
 from django.http import JsonResponse
 from .models import Product, Order, OrderItem, ShippingAddress, Customer
-from .utils import cartData, cookieCart, guestOrder
+from .utils import cartData, cookieCart, guestOrder, checkoutCheck
 
 def store(request):
     data = cartData(request)
@@ -67,22 +67,6 @@ def processOrder(request):
     else:
         customer, order = guestOrder(request, data)
 
-    total = float(data['form']['total'])
-    order.transaction_id = transaction_id
-
-    if total == order.get_cart_total:
-        order.complete = True
-    order.save()
-
-    if order.shipping == True:
-        ShippingAddress.objects.create(
-            customer = customer,
-            order = order,
-            address = data['shipping']['address'],
-            city = data['shipping']['city'],
-            state = data['shipping']['state'],
-            zipcode = data['shipping']['zipcode']
-        )
-
+    checkoutCheck(request, data, order, customer, transaction_id)
 
     return JsonResponse('Payment complete!', safe=False)
